@@ -9,4 +9,5 @@ CTF challenges, and HTB machines.
 - Web Security Essentials
 - Intro to Pen Testing
 
-- Topics: HTB machines, CTF challenges, CPTS modules
+Topics: 
+HTB machines, CTF challenges, CPTS modules
