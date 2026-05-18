@@ -1,17 +1,3 @@
-Give AI the raw notes for formatting:
-
-Act as an expert technical writer and cybersecurity instructor. 
-Clean up, format, and organize my raw HTB study notes into highly scannable Markdown. 
-- Use clear visual hierarchies (##, ###).
-- Convert comparisons into clean Markdown tables.
-- Use ASCII flowcharts for multi-step processes if necessary.
-- Highlight critical attack vectors or gotchas using blockquotes.
-- Keep the language punchy, direct, and technical.
-
-Here are my raw notes:
-[PASTE YOUR MESSY NOTES HERE]
-
-
 
 #Introduction to the Penetration Tester Path
 
@@ -420,6 +406,20 @@ Right fix → fix the entire PASSWORD POLICY
    → Wipe all systems
    → Invoice client
    → Send satisfaction survey
+
+
+Give AI the raw notes for formatting:
+
+Act as an expert technical writer and cybersecurity instructor. 
+Clean up, format, and organize my raw HTB study notes into highly scannable Markdown. 
+- Use clear visual hierarchies (##, ###).
+- Convert comparisons into clean Markdown tables.
+- Use ASCII flowcharts for multi-step processes if necessary.
+- Highlight critical attack vectors or gotchas using blockquotes.
+- Keep the language punchy, direct, and technical.
+
+Here are my raw notes:
+[PASTE YOUR MESSY NOTES HERE]
 
 
    
