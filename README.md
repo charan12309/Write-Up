@@ -12,8 +12,6 @@ Notes, walkthroughs, and writeups by Ankam Charan Teja — B.Tech Cybersecurity 
 
 ### Profiles
 
-* GitHub: github.com/charan12309
-* Medium: medium.com/@ankamcharantejaa
-
-
+* GitHub: [github.com/charan12309](https://github.com/charan12309)
+* Medium: [medium.com/@ankamcharantejaa](https://medium.com/@ankamcharantejaa)
 
