@@ -9,4 +9,5 @@
   * [CTF Write-Ups](readme/ctf-write-ups/README.md)
     * [Page 2](readme/ctf-write-ups/page-2.md)
   * [Cheat Sheets](readme/cheat-sheets/README.md)
-    * [Page 3](readme/cheat-sheets/page-3.md)
+    * [Common-Ports](readme/cheat-sheets/page-3.md)
+    * [Page 3](readme/cheat-sheets/page-3-1.md)
