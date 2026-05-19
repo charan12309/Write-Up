@@ -9,5 +9,5 @@
   * [CTF Write-Ups](readme/ctf-write-ups/README.md)
     * [Page 2](readme/ctf-write-ups/page-2.md)
   * [Cheat Sheets](readme/cheat-sheets/README.md)
-    * [Common-Ports](readme/cheat-sheets/page-3.md)
     * [HTB-VPN](readme/cheat-sheets/htb-vpn.md)
+    * [Common-Ports](readme/cheat-sheets/page-3.md)

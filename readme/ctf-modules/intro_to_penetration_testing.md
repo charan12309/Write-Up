@@ -1,7 +1,5 @@
 # Introduction to the penetration tester path
 
-
-
 This page outlines the standard penetration testing workflow.
 
 ### Core phases
@@ -293,6 +291,8 @@ Collect useful artifacts such as:
 * ARP tables
 
 #### Persistence
+
+**Persistence** in cybersecurity refers to the techniques and mechanisms employed by threat actors to maintain long-term access to a compromised system or network, ensuring their presence survives system reboots, user logoffs, and credential changes.
 
 If your access drops, you may lose the foothold.
 
