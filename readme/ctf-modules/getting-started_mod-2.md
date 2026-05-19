@@ -2,7 +2,7 @@
 
 ***
 
-### Common Terms :
+### Common Terms&#x20;
 
 #### Shell :
 
@@ -32,7 +32,7 @@ Web Server Vulnerabilities and Web Application Flaws (OWASP Top 10)
 
 {% embed url="https://owasp.org/Top10/2025/" %}
 
-### Common Tools :
+### Common Tools&#x20;
 
 #### Using SSH :
 
@@ -90,8 +90,6 @@ But if you have already compromised the public web server sitting right next to 
 Terminal multiplexers, like `tmux` or `Screen`, are great utilities for expanding a standard Linux terminal's features, like having multiple windows within one terminal and jumping between them.&#x20;
 
 [https://tmuxcheatsheet.com/](https://tmuxcheatsheet.com/)
-
-
 
 #### VIM:
 
