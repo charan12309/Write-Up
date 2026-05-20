@@ -10,4 +10,4 @@ Use this page as a quick reference for common ports and default scan coverage.
 
 ### Visual reference
 
-<figure><img src="../../.gitbook/assets/image (2) (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../../.gitbook/assets/image (2) (1) (1).png" alt=""><figcaption></figcaption></figure>

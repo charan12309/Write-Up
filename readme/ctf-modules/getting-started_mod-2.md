@@ -19,7 +19,7 @@ Use this page for first-pass concepts, common tools, and early service checks.
 
 The shell is a program that takes the input from the user and passes these commands to OS (Operating System) to perform a specific function.
 
-<figure><img src="../../.gitbook/assets/image (2).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../../.gitbook/assets/image (2) (1).png" alt=""><figcaption></figcaption></figure>
 
 ### Port :
 
@@ -29,7 +29,7 @@ They allow a computer to route different types of traffic simultaneously over a 
 
 {% include "../../.gitbook/includes/protocol-comparison-tcp-vs....md" %}
 
-<figure><img src="../../.gitbook/assets/image (1) (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../../.gitbook/assets/image (1) (1) (1).png" alt=""><figcaption></figcaption></figure>
 
 ### Web Server :
 
@@ -51,7 +51,7 @@ Secure Shell is a network protocol that runs on port 22 by default and provides 
 
 SSH can be configured with password authentication or passwordless using public-key authentication using public/private key-pair.
 
-<figure><img src="../../.gitbook/assets/image (3).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../../.gitbook/assets/image (3) (1).png" alt=""><figcaption></figcaption></figure>
 
 ### Using Netcat :
 
@@ -112,7 +112,7 @@ Nmap is used to scan ports and let us know the services that are running.
 
 Basic nmap scan (scans 1000 most common ports by default and by default it runs a tcp scan) :
 
-<figure><img src="../../.gitbook/assets/image.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../../.gitbook/assets/image (3).png" alt=""><figcaption></figcaption></figure>
 
 ```
 nmap IP
@@ -122,7 +122,7 @@ We can use the `-sC` parameter to specify that `Nmap` scripts should be used to 
 
 <br>
 
-<figure><img src="../../.gitbook/assets/image (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../../.gitbook/assets/image (1) (1).png" alt=""><figcaption></figcaption></figure>
 
 ```
 nmap -sV -sC -p- IP
@@ -204,4 +204,72 @@ This is an Aggressive scan.
 
 #### Why This Matters in Pentesting
 
-The text is demonstrating the progression of enumeration. You start by finding an open port (`445`), then you use specialized tools (NSE scripts or `-A` flags) to pull the banners and exact software versions. Once you have those precise versions (e.g., _Windows 7 SP1_ or _Samba 4.6.2_), you can cross-reference them against public vulnerability databases to find specific, actionable exploits like EternalBlue.
+The text is demonstrating the progression of enumeration. You start by finding an open port (`445`), then you use specialized tools (NSE scripts or `-A` flags) to pull the banners and exact software versions. Once you have those precise versions (e.g., _Windows 7 SP1_ or _Samba 4.6.2_), you can cross-reference them against public vulnerability databases to find specific, actionable exploits like EternalBlue.<br>
+
+### Shares : &#x20;
+
+* SMB (Server Message Block): Protocol used to share folders and files remotely.
+* Security Risk: Shares frequently expose sensitive data (like hardcoded passwords).
+* Tool (`smbclient`): Used to enumerate and interact with SMB shares from the command line.
+  * `-L` : Lists all available shares on the target host.
+  * `-N` : Suppresses the password prompt (forces an anonymous connection attempt).
+
+Listing available shares:
+
+```
+smbclient -N -L \\\\IP
+```
+
+<figure><img src="../../.gitbook/assets/image.png" alt=""><figcaption></figcaption></figure>
+
+After finding non default share i.e users, we attempt to connect to it.
+
+```
+smbclient \\\\IP\\{non default share}
+```
+
+<figure><img src="../../.gitbook/assets/image (1).png" alt=""><figcaption></figcaption></figure>
+
+As this failed, we need to find valid creds elsewhere and then...
+
+```
+smbclient -U <username> \\\\<Target_IP>\\<Share_Name> 
+```
+
+after this, the tool will ask password and then once inside the `smb: \>` prompt, it functions similarly to a basic FTP or Linux shell.
+
+<figure><img src="../../.gitbook/assets/image (2).png" alt=""><figcaption></figcaption></figure>
+
+we can now use the get command to get the passwords.txt file.
+
+### SNMP : &#x20;
+
+* SNMP (Ports 161/162 TCP/UDP): Used for device management.
+* Versions 1 & 2c: Insecure; rely on unencrypted plaintext community strings instead of passwords.
+* Default Danger: Default strings are almost always `public` (read) or `private` (write).
+* Pentest Value: Leaks running processes (revealing command-line passwords), internal routing tables (revealing hidden network paths), and exact software versions.
+
+#### snmpwalk :
+
+```
+snmpwalk -v 2c -c public 10.129.42.253 1.3.6.1.2.1.1.5.0
+```
+
+* `snmpwalk`: A tool that sends sequential requests to "walk" through a device's management data tree.
+* `-v 2c`: Specifies that it is using SNMP version 2c (the insecure, plaintext version).
+* `-c public`: Supplies `public` as the community string (password).
+* `10.129.42.253`: The target IP address.
+* `1.3.6.1.2.1.1.5.0`: This long string of numbers is an OID (Object Identifier). In the universal SNMP database schema, this exact OID points directly to the system's Hostname.
+
+<figure><img src="../../.gitbook/assets/image (11).png" alt=""><figcaption></figcaption></figure>
+
+If the community string fails then you must use onesixtyone which bruteforces...
+
+```
+onesixtyone -c dict.txt 10.129.42.254
+```
+
+* `onesixtyone`: A highly efficient, multi-threaded scanner built specifically to brute-force SNMP community strings.
+* `-c dict.txt`: Passes a text file containing a dictionary of common community strings (e.g., `public`, `private`, `internal`, `manager`, `cisco`).
+
+<figure><img src="../../.gitbook/assets/image (12).png" alt=""><figcaption></figcaption></figure>

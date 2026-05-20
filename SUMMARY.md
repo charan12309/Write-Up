@@ -16,3 +16,4 @@
     * [TMUX](readme/cheat-sheets/tmux.md)
     * [VIM](readme/cheat-sheets/vim.md)
     * [Nmap](readme/cheat-sheets/nmap.md)
+  * [News](readme/news.md)
