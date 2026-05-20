@@ -1,4 +1,7 @@
 # TMUX
 
-[https://tmuxcheatsheet.com/](https://tmuxcheatsheet.com/)
+Use this page for fast tmux lookup during labs and writeups.
 
+### Reference
+
+{% embed url="https://tmuxcheatsheet.com/" %}
