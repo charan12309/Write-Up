@@ -90,6 +90,6 @@ stty rows <ROWS> columns <COLS>
 
 ### Useful references
 
-* [Getting started](../)
-* [WF-Service Enumeration](../wf-service-enumeration.md)
+* [Getting started](./)
+* [WF-Service Enumeration](wf-service-enumeration.md)
 * [Payload All The Things reverse shell cheat sheet](https://swisskyrepo.github.io/InternalAllTheThings/cheatsheets/shell-reverse-cheatsheet/)

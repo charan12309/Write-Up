@@ -90,5 +90,5 @@ It is often best used as a stepping stone to a reverse shell or a better shell.
 
 ### Useful references
 
-* [Getting started](../)
-* [WF-Web Enumeration](../wf-web-enumeration/)
+* [Getting started](./)
+* [WF-Web Enumeration](wf-web-enumeration/)

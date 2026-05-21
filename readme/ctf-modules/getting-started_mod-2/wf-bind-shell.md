@@ -72,5 +72,5 @@ If the process stops or the target reboots, you still lose access.
 
 ### Useful references
 
-* [Getting started](../)
+* [Getting started](./)
 * [Payload All The Things bind shell cheat sheet](https://swisskyrepo.github.io/InternalAllTheThings/cheatsheets/shell-bind-cheatsheet/)
