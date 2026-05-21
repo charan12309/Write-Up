@@ -470,11 +470,15 @@ WordPress found at `/IP/wordpress`
 
 ## Public Exploits
 
-Once Nmap scans and gives out the services and their version...our primary goal is to find the exploits for them...specifically looking for CVE's.
+After service fingerprinting, the next goal is to find public exploits that match the exact version.
 
 <figure><img src="../../../.gitbook/assets/image.png" alt=""><figcaption></figcaption></figure>
 
-Searchsploit Tip: If you want to copy an exploit script directly to your current working directory instead of just looking at its path, use the `-m` flag: `searchsploit -m linux/remote/45233.py`
+**Searchsploit tip:** Use `-m` to copy an exploit into your current directory.
+
+```bash
+searchsploit -m linux/remote/45233.py
+```
 
 ### Searchsploit
 
@@ -520,7 +524,9 @@ Related cheat sheet:
 
 ### Metasploit Primer
 
-The Metasploit Framework is an excellent tool for pentesters. It provides many public built in exploits for public vulnerabilities and provides an easy way to use these exploits against vulnerable targets.
+The Metasploit Framework is a core tool for pentesters.
+
+It packages many public exploits and makes them easier to run against vulnerable targets.
 
 * Reconnaissance & Enumeration: Includes auxiliary modules to scan ports, identify services, and discover active hosts.
 * Vulnerability Verification: Offers `check` functions to safely confirm if a target is vulnerable without exploiting it.
@@ -570,7 +576,7 @@ Related cheat sheet:
 
 * [Metasploit](../../cheat-sheets/metasploit.md)
 
-#### For Practicing MSP:
+#### For practicing MSF
 
 * Windows Targets (Great for SMB/IIS practice): _Blue_, _Legacy_, _Granny_, _Grandpa_, _Jerry_, _Optimum_, _Devel_.
 * Linux Targets (Great for legacy network services): _Lame_.
@@ -588,3 +594,166 @@ Related cheat sheet:
 <figure><img src="../../../.gitbook/assets/image (28).png" alt=""><figcaption></figcaption></figure>
 
 <figure><img src="../../../.gitbook/assets/image (29).png" alt=""><figcaption></figcaption></figure>
+
+## Types of shells
+
+Use a shell after code execution.
+
+It gives you persistent, interactive access without rerunning the exploit for every command.
+
+### Access paths
+
+After you compromise a system, you usually keep access in one of two ways:
+
+1. **Legitimate remote access protocols**
+2. **Interactive shells**
+
+#### Legitimate remote access protocols
+
+Use these when you recover valid credentials during exploitation.
+
+Common options:
+
+* `SSH`
+* `WinRM`
+
+#### Interactive shells
+
+Use these when you do not have valid admin credentials.
+
+A payload must hook into the target command interpreter, such as `/bin/bash`, `cmd.exe`, or `powershell.exe`.
+
+### Main shell types
+
+| Shell type        | How it works                                           | Best use                                            | Main limitation                             |
+| ----------------- | ------------------------------------------------------ | --------------------------------------------------- | ------------------------------------------- |
+| **Reverse shell** | The target connects back to your listener.             | Best default choice during exploitation.            | Needs outbound access from the target.      |
+| **Bind shell**    | The target opens a port and waits for your connection. | Useful when the target can expose a reachable port. | Inbound firewall rules often block it.      |
+| **Web shell**     | A script runs commands through HTTP or HTTPS.          | Useful on web servers after file upload or RCE.     | Usually less interactive than a full shell. |
+
+#### Reverse shell
+
+Your machine listens on a port such as `4444`.
+
+```bash
+nc -lvnp 4444
+```
+
+<figure><img src="../../../.gitbook/assets/image (38).png" alt=""><figcaption></figcaption></figure>
+
+Next, make the target connect back to your listener.
+
+Before you trigger the payload, confirm the IP address the target should use.
+
+```bash
+ip a
+```
+
+<figure><img src="../../../.gitbook/assets/image (39).png" alt=""><figcaption></figcaption></figure>
+
+{% hint style="info" %}
+Use the VPN interface IP, such as `tun0`, when the target is only reachable through the lab VPN.
+
+On a real engagement, you may use another interface such as `eth0`.
+{% endhint %}
+
+**Reverse shell command**
+
+The exact command depends on the target OS and the tools available on the host.
+
+Use [Payload All The Things](https://swisskyrepo.github.io/InternalAllTheThings/cheatsheets/shell-reverse-cheatsheet/) to choose a payload that fits the target.
+
+<figure><img src="../../../.gitbook/assets/image (40).png" alt=""><figcaption></figcaption></figure>
+
+Run the payload through your exploit path, such as an RCE, a Python exploit, or a Metasploit module.
+
+If it works, your `netcat` listener should receive the connection:
+
+<figure><img src="../../../.gitbook/assets/image (41).png" alt=""><figcaption></figcaption></figure>
+
+#### Bind shell
+
+With a bind shell, the target opens a listening port.
+
+You connect to that port to access the target shell.
+
+Use [Payload All The Things](https://swisskyrepo.github.io/InternalAllTheThings/cheatsheets/shell-bind-cheatsheet/) to choose a bind shell payload that fits the target.
+
+{% hint style="warning" %}
+Bind shells often fail on real targets because inbound firewall rules block the exposed port.
+{% endhint %}
+
+In this example, the target listens on `0.0.0.0:1234` so you can connect from your machine.
+
+The following image shows example bind shell commands:
+
+<figure><img src="../../../.gitbook/assets/image (42).png" alt=""><figcaption></figcaption></figure>
+
+**Connect with netcat**
+
+After the target starts listening, connect to that port with `netcat`:
+
+<figure><img src="../../../.gitbook/assets/image (43).png" alt=""><figcaption></figcaption></figure>
+
+Bind shells can be convenient when they stay running.
+
+If your connection drops, you may reconnect without rerunning the exploit.
+
+If the process stops or the target reboots, you still lose access.
+
+#### Upgrade a basic shell to a full TTY
+
+Many `netcat` shells are unstable and lack job control.
+
+Use the `python` and `stty` method to improve interactivity.
+
+Run this inside the shell:
+
+```bash
+python -c 'import pty; pty.spawn("/bin/bash")'
+```
+
+Then press `Ctrl+Z` to background the session.
+
+On your local terminal, run the `stty` command shown below:
+
+<figure><img src="../../../.gitbook/assets/image (44).png" alt=""><figcaption></figcaption></figure>
+
+After that, bring the shell back with `fg`.
+
+If the screen looks blank, press `Enter` or run `reset`.
+
+You should now have a more usable TTY with better terminal behavior.
+
+**Fix terminal size**
+
+Sometimes the upgraded shell still has the wrong rows, columns, or terminal type.
+
+Open another local terminal and collect your `TERM`, `rows`, and `columns` values:
+
+<figure><img src="../../../.gitbook/assets/image (45).png" alt=""><figcaption></figcaption></figure>
+
+Then apply those values inside the upgraded shell:
+
+<figure><img src="../../../.gitbook/assets/image (46).png" alt=""><figcaption></figcaption></figure>
+
+At that point, the shell should behave much closer to a normal SSH session.
+
+#### Web shell
+
+A web shell is a script placed in a reachable web directory.
+
+You interact with it over HTTP or HTTPS from a browser or with `curl`.
+
+Use it when:
+
+* you gain file upload
+* you have command injection or RCE in a web app
+* you need a simple way to run commands through the web server
+
+Main tradeoffs:
+
+* it is usually less interactive than a reverse shell
+* commands may be logged by the web application
+* it is often best used as a stepping stone to a reverse shell or TTY
+
