@@ -29,6 +29,7 @@ Use this page for first-pass concepts, common tools, and early service checks.
 * [WF-Reverse Shell](wf-reverse-shell.md)
 * [WF-Bind Shell](wf-bind-shell.md)
 * [WF-Web Shell](wf-web-shell.md)
+* [WF-Privilege Escalation](wf-privilege-escalation/)
 
 ## Foundations
 
@@ -799,6 +800,8 @@ curl http://<SERVER_IP>:<PORT>/shell.php?cmd=id
 * Upgrade a raw Linux shell early.
 
 ## Privilege Escalation
+
+Start with [WF-Privilege Escalation](wf-privilege-escalation/).
 
 ### The privilege escalation mindset
 

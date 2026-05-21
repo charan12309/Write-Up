@@ -12,6 +12,8 @@
       * [WF-Reverse Shell](readme/ctf-modules/getting-started_mod-2/wf-reverse-shell.md)
       * [WF-Bind Shell](readme/ctf-modules/getting-started_mod-2/wf-bind-shell.md)
       * [WF-Web Shell](readme/ctf-modules/getting-started_mod-2/wf-web-shell.md)
+      * [WF-Privilege Escalation](readme/ctf-modules/getting-started_mod-2/wf-privilege-escalation/README.md)
+        * [PrivEsc tiny Walkthrough](readme/ctf-modules/getting-started_mod-2/wf-privilege-escalation/privesc-tiny-walkthrough.md)
     * [Information Gathering](readme/ctf-modules/information-gathering/README.md)
       * [Page 1](readme/ctf-modules/information-gathering/page-1.md)
   * [HTB Machines](readme/htb-machines/README.md)
