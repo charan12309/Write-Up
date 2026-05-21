@@ -6,7 +6,7 @@
     * [Getting started](readme/ctf-modules/getting-started_mod-2/README.md)
       * [WF-Service Enumeration](readme/ctf-modules/getting-started_mod-2/wf-service-enumeration.md)
       * [WF-Web Enumeration](readme/ctf-modules/getting-started_mod-2/wf-web-enumeration/README.md)
-        * [Web Enumeration tiny Walkthrough](readme/ctf-modules/getting-started_mod-2/wf-web-enumeration/web-enumeration-tiny-walkthrough.md)
+        * [Gobuster tiny Walkthrough](readme/ctf-modules/getting-started_mod-2/wf-web-enumeration/gobuster-tiny-walkthrough.md)
       * [Exploitation](readme/ctf-modules/getting-started_mod-2/exploitation/README.md)
         * [MSF tiny Walkthrough](readme/ctf-modules/getting-started_mod-2/exploitation/msf-tiny-walkthrough.md)
     * [Information Gathering](readme/ctf-modules/information-gathering/README.md)
