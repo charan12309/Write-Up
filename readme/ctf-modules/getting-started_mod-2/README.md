@@ -10,6 +10,8 @@ Use this page for first-pass concepts, common tools, and early service checks.
 | [TMUX](../../cheat-sheets/tmux.md)                                 | Session, window, and pane shortcuts            |
 | [VIM](../../cheat-sheets/vim.md)                                   | Fast editing and navigation                    |
 | [Nmap](../../cheat-sheets/nmap.md)                                 | Common scans, NSE scripts, and banner grabbing |
+| [Searchsploit](../../cheat-sheets/searchsploit.md)                 | Local exploit search, review, and copy         |
+| [Metasploit](../../cheat-sheets/metasploit.md)                     | Module search, checks, and session handling    |
 | [SMB](../../cheat-sheets/smb.md)                                   | Share enumeration and access commands          |
 | [SNMP](../../cheat-sheets/snmp.md)                                 | `snmpwalk` and community string checks         |
 | [Gobuster](../../cheat-sheets/gobuster.md)                         | Directory and DNS brute-force commands         |
@@ -41,7 +43,7 @@ They allow a computer to route different types of traffic simultaneously over a 
 
 {% include "../../../.gitbook/includes/protocol-comparison-tcp-vs....md" %}
 
-<figure><img src="../../../.gitbook/assets/image (1) (1) (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../../../.gitbook/assets/image (1) (1) (1) (1).png" alt=""><figcaption></figcaption></figure>
 
 ### Web server
 
@@ -134,7 +136,7 @@ We can use the `-sC` parameter to specify that `Nmap` scripts should be used to 
 
 <br>
 
-<figure><img src="../../../.gitbook/assets/image (1) (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../../../.gitbook/assets/image (1) (1) (1).png" alt=""><figcaption></figcaption></figure>
 
 ```bash
 nmap -sV -sC -p- <TARGET_IP>
@@ -232,7 +234,7 @@ Listing available shares:
 smbclient -N -L \\\\<TARGET_IP>
 ```
 
-<figure><img src="../../../.gitbook/assets/image.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../../../.gitbook/assets/image (1).png" alt=""><figcaption></figcaption></figure>
 
 After finding a non-default share like `users`, we attempt to connect to it.
 
@@ -240,7 +242,7 @@ After finding a non-default share like `users`, we attempt to connect to it.
 smbclient \\\\<TARGET_IP>\\<SHARE_NAME>
 ```
 
-<figure><img src="../../../.gitbook/assets/image (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../../../.gitbook/assets/image (1) (1).png" alt=""><figcaption></figcaption></figure>
 
 If this fails, we need to find valid credentials elsewhere and then try again.
 
@@ -465,3 +467,124 @@ WordPress found at `/IP/wordpress`
 * That can lead to remote code execution.
 * One Gobuster result can lead to full server compromise.
 {% endhint %}
+
+## Public Exploits
+
+Once Nmap scans and gives out the services and their version...our primary goal is to find the exploits for them...specifically looking for CVE's.
+
+<figure><img src="../../../.gitbook/assets/image.png" alt=""><figcaption></figcaption></figure>
+
+Searchsploit Tip: If you want to copy an exploit script directly to your current working directory instead of just looking at its path, use the `-m` flag: `searchsploit -m linux/remote/45233.py`
+
+### Searchsploit
+
+Installation:
+
+```
+sudo dnf install exploitdb -y
+```
+
+Usage:
+
+```
+searchsploit openssh 7.2
+```
+
+We can also utilize online exploit databases to search for vulnerabilities, like [Exploit DB](https://www.exploit-db.com/), [Rapid7 DB](https://www.rapid7.com/db/), or [Vulnerability Lab](https://www.vulnerability-lab.com/).
+
+#### Searchsploit technical flow
+
+Use Searchsploit after service fingerprinting.
+
+Start with a broad search.
+
+Then narrow to the exact version.
+
+```bash
+nmap -sV -sC -p- <TARGET_IP>
+searchsploit <SERVICE> <VERSION>
+searchsploit -x <EDB_PATH>
+searchsploit -m <EDB_PATH>
+```
+
+Useful flags:
+
+* `-t` shows titles only.
+* `-x` opens the exploit file for review.
+* `-m` copies the exploit into the current directory.
+* `--nmap scan.xml` maps an Nmap XML file to known exploits.
+
+Related cheat sheet:
+
+* [Searchsploit](../../cheat-sheets/searchsploit.md)
+
+### Metasploit Primer
+
+The Metasploit Framework is an excellent tool for pentesters. It provides many public built in exploits for public vulnerabilities and provides an easy way to use these exploits against vulnerable targets.
+
+* Reconnaissance & Enumeration: Includes auxiliary modules to scan ports, identify services, and discover active hosts.
+* Vulnerability Verification: Offers `check` functions to safely confirm if a target is vulnerable without exploiting it.
+* Advanced Payloads (Meterpreter): Provides an in-memory, highly stealthy runtime environment to run commands, inject processes, and manage sessions on a compromised target.
+* Post-Exploitation & Pivoting: Features tools to harvest credentials, elevate privileges, and route traffic through a compromised machine to internal networks.
+
+When configuring an exploit module (like `ms17_010_psexec` used in the text), two variables are almost universally required to route and establish the exploit payload successfully:
+
+<figure><img src="../../../.gitbook/assets/image (22).png" alt=""><figcaption></figcaption></figure>
+
+{% hint style="warning" %}
+**Why checking matters:** Firing an exploit blindly can crash remote legacy services (like SMB or RDP), trigger Blue Screens of Death (BSOD) on production systems, or unnecessarily trip Intrusion Detection Systems (IDS).
+{% endhint %}
+
+The `check` command uses low-risk queries or auxiliary scanners to identify OS versions and service responses, validating the vulnerability before any intrusive payload code is actually executed.
+
+#### Metasploit technical flow
+
+Use Metasploit after you identify the service and version.
+
+Search for a matching module.
+
+Review the options before you run anything.
+
+```bash
+msfconsole
+search <SERVICE> <VERSION>
+use <MODULE>
+show options
+show payloads
+set RHOSTS <TARGET_IP>
+set LHOST <YOUR_IP>
+check
+run
+```
+
+Common post-run commands:
+
+```bash
+sessions
+sessions -i <ID>
+background
+info
+```
+
+Related cheat sheet:
+
+* [Metasploit](../../cheat-sheets/metasploit.md)
+
+#### For Practicing MSP:
+
+* Windows Targets (Great for SMB/IIS practice): _Blue_, _Legacy_, _Granny_, _Grandpa_, _Jerry_, _Optimum_, _Devel_.
+* Linux Targets (Great for legacy network services): _Lame_.
+
+<figure><img src="../../../.gitbook/assets/image (23).png" alt=""><figcaption></figcaption></figure>
+
+<figure><img src="../../../.gitbook/assets/image (24).png" alt=""><figcaption></figcaption></figure>
+
+<figure><img src="../../../.gitbook/assets/image (25).png" alt=""><figcaption></figcaption></figure>
+
+<figure><img src="../../../.gitbook/assets/image (26).png" alt=""><figcaption></figcaption></figure>
+
+<figure><img src="../../../.gitbook/assets/image (27).png" alt=""><figcaption></figcaption></figure>
+
+<figure><img src="../../../.gitbook/assets/image (28).png" alt=""><figcaption></figcaption></figure>
+
+<figure><img src="../../../.gitbook/assets/image (29).png" alt=""><figcaption></figcaption></figure>

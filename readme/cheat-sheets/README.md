@@ -9,6 +9,8 @@ Use this section for quick commands, defaults, and lookup notes.
 * [TMUX](tmux.md)
 * [VIM](vim.md)
 * [Nmap](nmap.md)
+* [Searchsploit](searchsploit.md)
+* [Metasploit](metasploit.md)
 * [SMB](smb.md)
 * [SNMP](snmp.md)
 
