@@ -2,6 +2,7 @@
 
 * [CTF & Security Writeups](README.md)
   * [HTB Modules](readme/ctf-modules/README.md)
+    * [Practice strategy](readme/ctf-modules/practice-strategy.md)
     * [Introduction to the penetration tester path](readme/ctf-modules/intro_to_penetration_testing.md)
     * [Getting started](readme/ctf-modules/getting-started_mod-2/README.md)
       * [WF-Service Enumeration](readme/ctf-modules/getting-started_mod-2/wf-service-enumeration.md)
@@ -17,7 +18,8 @@
     * [Information Gathering](readme/ctf-modules/information-gathering/README.md)
       * [Page 1](readme/ctf-modules/information-gathering/page-1.md)
   * [HTB Machines](readme/htb-machines/README.md)
-    * [Machine writeup template](readme/htb-machines/page-1.md)
+    * [Easy](readme/htb-machines/easy/README.md)
+      * [Nibbles](readme/htb-machines/easy/page-1.md)
   * [CTF writeups](readme/ctf-write-ups/README.md)
     * [Challenge writeup template](readme/ctf-write-ups/page-2.md)
   * [Cheat Sheets](readme/cheat-sheets/README.md)

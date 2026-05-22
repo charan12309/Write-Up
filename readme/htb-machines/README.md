@@ -4,7 +4,7 @@ This section stores machine writeups and repeatable workflows.
 
 ### Current pages
 
-* [Machine writeup template](page-1.md)
+* [Machine writeup template](easy/page-1.md)
 
 ### Suggested structure
 
