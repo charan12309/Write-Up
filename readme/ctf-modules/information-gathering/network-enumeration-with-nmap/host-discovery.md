@@ -228,7 +228,7 @@ Treat TTL as a hint, not proof. Routing hops and host configuration can change i
 
 ### 2. Evading Firewalls and IDS Systems
 
-As your module note mentions, standard host discovery fails if a firewall drops ICMP packets. If you only know one discovery strategy (ICMP Ping), you will report the host as dead and miss the target completely.
+Standard host discovery fails if a firewall drops ICMP packets. If you only know one discovery strategy (ICMP Ping), you will report the host as dead and miss the target completely.
 
 Knowing "more strategies" means you can cycle through alternate host discovery techniques when the front door is locked:
 

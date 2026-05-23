@@ -4,42 +4,54 @@ description: Identify open ports, services, and scan states with Nmap.
 
 # Host and Port Scanning
 
-After we have found out that our target is alive, we want to get a more accurate picture of the system.
+Now that the host is confirmed alive, map its exposed services.
 
-The information we need includes:
+Focus on:
 
-* Open ports and their services
-* Service versions
-* Information the services provide
-* Operating system
+* open ports and protocols
+* service names and versions
+* extra banners or metadata
+* operating system clues
 
-Nmap can report six different states for a scanned port:
+Nmap reports six possible port states:
 
 <figure><img src="../../../../.gitbook/assets/image (64).png" alt=""><figcaption></figcaption></figure>
 
-### Discovering open TCP ports
+### Discover open TCP ports
 
-By default, `Nmap` scans the top 1000 TCP ports with the SYN scan (`-sS`).
+By default, Nmap scans the top `1000` TCP ports.
 
-This SYN scan is set only to default when we run it as root because of the socket permissions required to create raw TCP packets.
+If you run it as root, Nmap uses a SYN scan with `-sS`.
 
-Otherwise, the TCP scan (`-sT`) is performed by default.
+If you run it without raw socket privileges, Nmap falls back to a TCP connect scan with `-sT(Connect Scan)`.
 
-This means that if we do not define ports and scanning methods, these parameters are set automatically.
+You can scope the scan in several ways:
 
-We can define the ports one by one (`-p 22,25,80,139,445`), by range (`-p 22-445`), by top ports (`--top-ports=10`) from the `Nmap` database that have been signed as most frequent, by scanning all ports (`-p-`), but also by defining a fast port scan, which contains the top 100 ports (`-F`).
+* specific ports with `-p 22,25,80,139,445`
+* a range with `-p 22-445`
+* the most common ports with `--top-ports=10`
+* all ports with `-p-`
+* the top `100` ports with `-F`
 
-### Scanning top 10 TCP ports
+{% hint style="info" %}
+Use `-p-` when you do not want to miss high-numbered services.
+{% endhint %}
+
+### Scan the top 10 TCP ports
 
 <figure><img src="../../../../.gitbook/assets/image (65).png" alt=""><figcaption></figcaption></figure>
 
-We see that we only scanned the top 10 TCP ports of our target, and `Nmap` displays their state accordingly.
+This scan checks only the ten most common TCP ports.
 
-If we trace the packets `Nmap` sends, we will see the `RST` flag on `TCP port 21` that our target sends back to us.
+Nmap marks each port with its current state.
 
-To have a clear view of the SYN scan, we disable the ICMP echo requests (`-Pn`), DNS resolution (`-n`), and ARP ping scan (`--disable-arp-ping`).
+To inspect packet behavior clearly, disable host discovery side traffic:
 
-### Trace the packets
+* `-Pn` skips host discovery
+* `-n` disables DNS resolution
+* `--disable-arp-ping` disables ARP discovery
+
+### Trace a SYN scan
 
 ```bash
 impale7@htb[/htb]$ sudo nmap 10.129.2.28 -p 21 --packet-trace -Pn -n --disable-arp-ping
@@ -59,13 +71,294 @@ Nmap done: 1 IP address (1 host up) scanned in 0.07 seconds
 
 <figure><img src="../../../../.gitbook/assets/image (66).png" alt=""><figcaption></figcaption></figure>
 
-We can see from the SENT line that we (`10.10.14.2`) sent a TCP packet with the `SYN` flag (`S`) to our target (`10.129.2.28`). In the next RCVD line, we can see that the target responds with a TCP packet containing the `RST` and `ACK` flags (`RA`). `RST` and `ACK` flags are used to acknowledge receipt of the TCP packet (`ACK`) and to end the TCP session (`RST`).
+Here, the scanner sends a TCP packet with the `SYN` flag.
 
-Request
+The target replies with `RST,ACK`.
+
+That tells Nmap the port is reachable but closed.
+
+#### Request
 
 <figure><img src="../../../../.gitbook/assets/image (67).png" alt=""><figcaption></figcaption></figure>
 
-Response
+#### Response
 
 <figure><img src="../../../../.gitbook/assets/image (68).png" alt=""><figcaption></figcaption></figure>
 
+### Use a TCP connect scan
+
+The [TCP connect scan](https://nmap.org/book/scan-methods-connect-scan.html) uses `-sT`.
+
+It completes the full three-way handshake.
+
+That makes it accurate, but noisy.
+
+If the target returns:
+
+* `SYN-ACK`, the port is `open`
+* `RST`, the port is `closed`
+
+SYN scans are quieter because they do not finish the connection.
+
+Connect scans create more logs and are easier to detect.
+
+They are still useful when you need accuracy or do not have raw socket access.
+
+#### Example
+
+```bash
+impale7@htb[/htb]$ sudo nmap 10.129.2.28 -p 443 --packet-trace --disable-arp-ping -Pn -n --reason -sT
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-06-15 16:26 CET
+CONN (0.0385s) TCP localhost > 10.129.2.28:443 => Operation now in progress
+CONN (0.0396s) TCP localhost > 10.129.2.28:443 => Connected
+Nmap scan report for 10.129.2.28
+Host is up, received user-set (0.013s latency).
+
+PORT    STATE SERVICE REASON
+443/tcp open  https   syn-ack
+
+Nmap done: 1 IP address (1 host up) scanned in 0.04 seconds
+```
+
+### Understand filtered TCP ports
+
+A `filtered` result usually means a firewall handled the probe before the service did.
+
+Two common cases are:
+
+* the packet is dropped
+* the packet is rejected
+
+When a firewall drops packets, Nmap gets no reply.
+
+Nmap retries several times before deciding the port is filtered.
+
+#### Dropped packets
+
+In this example, the firewall silently drops traffic to TCP `139`.
+
+```bash
+impale7@htb[/htb]$ sudo nmap 10.129.2.28 -p 139 --packet-trace -n --disable-arp-ping -Pn
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-06-15 15:45 CEST
+SENT (0.0381s) TCP 10.10.14.2:60277 > 10.129.2.28:139 S ttl=47 id=14523 iplen=44  seq=4175236769 win=1024 <mss 1460>
+SENT (1.0411s) TCP 10.10.14.2:60278 > 10.129.2.28:139 S ttl=45 id=7372 iplen=44  seq=4175171232 win=1024 <mss 1460>
+Nmap scan report for 10.129.2.28
+Host is up.
+
+PORT    STATE    SERVICE
+139/tcp filtered netbios-ssn
+MAC Address: DE:AD:00:00:BE:EF (Intel Corporate)
+
+Nmap done: 1 IP address (1 host up) scanned in 2.06 seconds
+```
+
+Key flags:
+
+* `-p 139` scans only TCP `139`
+* `--packet-trace` shows sent and received packets
+* `-n` disables DNS lookups
+* `--disable-arp-ping` disables ARP discovery
+* `-Pn` skips host discovery
+
+This scan takes longer because Nmap waits for replies that never arrive.
+
+#### Rejected packets
+
+In this example, the firewall rejects traffic to TCP `445`.
+
+```bash
+impale7@htb[/htb]$ sudo nmap 10.129.2.28 -p 445 --packet-trace -n --disable-arp-ping -Pn
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-06-15 15:55 CEST
+SENT (0.0388s) TCP 10.129.2.28:52472 > 10.129.2.28:445 S ttl=49 id=21763 iplen=44  seq=1418633433 win=1024 <mss 1460>
+RCVD (0.0487s) ICMP [10.129.2.28 > 10.129.2.28 Port 445 unreachable (type=3/code=3) ] IP [ttl=64 id=20998 iplen=72 ]
+Nmap scan report for 10.129.2.28
+Host is up (0.0099s latency).
+
+PORT    STATE    SERVICE
+445/tcp filtered microsoft-ds
+MAC Address: DE:AD:00:00:BE:EF (Intel Corporate)
+
+Nmap done: 1 IP address (1 host up) scanned in 0.05 seconds
+```
+
+An ICMP `type 3 code 3` response means the port is unreachable.
+
+If you already know the host is alive, treat this as a strong firewall clue.
+
+### Discover open UDP ports
+
+UDP scanning uses `-sU`.
+
+It is slower than TCP scanning because UDP has no handshake.
+
+Many UDP services do not reply to empty probes.
+
+That means Nmap often waits for timeouts before deciding on a state.
+
+#### Example UDP scan
+
+```bash
+impale7@htb[/htb]$ sudo nmap 10.129.2.28 -F -sU
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-06-15 16:01 CEST
+Nmap scan report for 10.129.2.28
+Host is up (0.059s latency).
+Not shown: 95 closed ports
+PORT     STATE         SERVICE
+68/udp   open|filtered dhcpc
+137/udp  open          netbios-ns
+138/udp  open|filtered netbios-dgm
+631/udp  open|filtered ipp
+5353/udp open          zeroconf
+MAC Address: DE:AD:00:00:BE:EF (Intel Corporate)
+
+Nmap done: 1 IP address (1 host up) scanned in 98.07 seconds
+```
+
+Key flags:
+
+* `-F` scans the top `100` ports
+* `-sU` performs a UDP scan
+
+{% hint style="warning" %}
+UDP scans are often slow. Start small unless you have a clear reason to go broad.
+{% endhint %}
+
+#### Open UDP port
+
+If a UDP service replies, Nmap can mark the port as `open`.
+
+```bash
+impale7@htb[/htb]$ sudo nmap 10.129.2.28 -sU -Pn -n --disable-arp-ping --packet-trace -p 137 --reason
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-06-15 16:15 CEST
+SENT (0.0367s) UDP 10.10.14.2:55478 > 10.129.2.28:137 ttl=57 id=9122 iplen=78
+RCVD (0.0398s) UDP 10.129.2.28:137 > 10.10.14.2:55478 ttl=64 id=13222 iplen=257
+Nmap scan report for 10.129.2.28
+Host is up, received user-set (0.0031s latency).
+
+PORT    STATE SERVICE    REASON
+137/udp open  netbios-ns udp-response ttl 64
+MAC Address: DE:AD:00:00:BE:EF (Intel Corporate)
+
+Nmap done: 1 IP address (1 host up) scanned in 0.04 seconds
+```
+
+Key flags:
+
+* `-sU` performs a UDP scan
+* `-Pn` skips host discovery
+* `-n` disables DNS lookups
+* `--disable-arp-ping` disables ARP discovery
+* `--packet-trace` shows packet flow
+* `-p 137` scans only UDP `137`
+* `--reason` explains the detected state
+
+#### Closed UDP port
+
+If the target returns ICMP `port unreachable`, the UDP port is `closed`.
+
+```bash
+impale7@htb[/htb]$ sudo nmap 10.129.2.28 -sU -Pn -n --disable-arp-ping --packet-trace -p 100 --reason
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-06-15 16:25 CEST
+SENT (0.0445s) UDP 10.10.14.2:63825 > 10.129.2.28:100 ttl=57 id=29925 iplen=28
+RCVD (0.1498s) ICMP [10.129.2.28 > 10.10.14.2 Port unreachable (type=3/code=3) ] IP [ttl=64 id=11903 iplen=56 ]
+Nmap scan report for 10.129.2.28
+Host is up, received user-set (0.11s latency).
+
+PORT    STATE  SERVICE REASON
+100/udp closed unknown port-unreach ttl 64
+MAC Address: DE:AD:00:00:BE:EF (Intel Corporate)
+
+Nmap done: 1 IP address (1 host up) scanned in  0.15 seconds
+```
+
+#### Open or filtered UDP port
+
+If there is no reply, Nmap usually marks the port as `open|filtered`.
+
+```bash
+impale7@htb[/htb]$ sudo nmap 10.129.2.28 -sU -Pn -n --disable-arp-ping --packet-trace -p 138 --reason
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-06-15 16:32 CEST
+SENT (0.0380s) UDP 10.10.14.2:52341 > 10.129.2.28:138 ttl=50 id=65159 iplen=28
+SENT (1.0392s) UDP 10.10.14.2:52342 > 10.129.2.28:138 ttl=40 id=24444 iplen=28
+Nmap scan report for 10.129.2.28
+Host is up, received user-set.
+
+PORT    STATE         SERVICE     REASON
+138/udp open|filtered netbios-dgm no-response
+MAC Address: DE:AD:00:00:BE:EF (Intel Corporate)
+
+Nmap done: 1 IP address (1 host up) scanned in 2.06 seconds
+```
+
+### Detect service versions
+
+Use `-sV` to identify versions and extra service details.
+
+This helps you:
+
+* confirm the real service behind a port
+* spot product versions
+* collect OS or hostname clues
+
+#### Example version scan
+
+```bash
+impale7@htb[/htb]$ sudo nmap 10.129.2.28 -Pn -n --disable-arp-ping --packet-trace -p 445 --reason -sV
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2022-11-04 11:10 GMT
+SENT (0.3426s) TCP 10.10.14.2:44641 > 10.129.2.28:445 S ttl=55 id=43401 iplen=44  seq=3589068008 win=1024 <mss 1460>
+RCVD (0.3556s) TCP 10.129.2.28:445 > 10.10.14.2:44641 SA ttl=63 id=0 iplen=44  seq=2881527699 win=29200 <mss 1337>
+NSOCK INFO [0.4980s] nsock_iod_new2(): nsock_iod_new (IOD #1)
+NSOCK INFO [0.4980s] nsock_connect_tcp(): TCP connection requested to 10.129.2.28:445 (IOD #1) EID 8
+NSOCK INFO [0.5130s] nsock_trace_handler_callback(): Callback: CONNECT SUCCESS for EID 8 [10.129.2.28:445]
+Service scan sending probe NULL to 10.129.2.28:445 (tcp)
+NSOCK INFO [0.5130s] nsock_read(): Read request from IOD #1 [10.129.2.28:445] (timeout: 6000ms) EID 18
+NSOCK INFO [6.5190s] nsock_trace_handler_callback(): Callback: READ TIMEOUT for EID 18 [10.129.2.28:445]
+Service scan sending probe SMBProgNeg to 10.129.2.28:445 (tcp)
+NSOCK INFO [6.5190s] nsock_write(): Write request for 168 bytes to IOD #1 EID 27 [10.129.2.28:445]
+NSOCK INFO [6.5190s] nsock_read(): Read request from IOD #1 [10.129.2.28:445] (timeout: 5000ms) EID 34
+NSOCK INFO [6.5190s] nsock_trace_handler_callback(): Callback: WRITE SUCCESS for EID 27 [10.129.2.28:445]
+NSOCK INFO [6.5320s] nsock_trace_handler_callback(): Callback: READ SUCCESS for EID 34 [10.129.2.28:445] (135 bytes)
+Service scan match (Probe SMBProgNeg matched with SMBProgNeg line 13836): 10.129.2.28:445 is netbios-ssn.  Version: |Samba smbd|3.X - 4.X|workgroup: WORKGROUP|
+NSOCK INFO [6.5320s] nsock_iod_delete(): nsock_iod_delete (IOD #1)
+Nmap scan report for 10.129.2.28
+Host is up, received user-set (0.013s latency).
+
+PORT    STATE SERVICE     REASON         VERSION
+445/tcp open  netbios-ssn syn-ack ttl 63 Samba smbd 3.X - 4.X (workgroup: WORKGROUP)
+Service Info: Host: Ubuntu
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 6.55 seconds
+```
+
+Key flags:
+
+* `-Pn` skips host discovery
+* `-n` disables DNS lookups
+* `--disable-arp-ping` disables ARP discovery
+* `--packet-trace` shows packet flow
+* `-p 445` scans only TCP `445`
+* `--reason` explains the detected state
+* `-sV` performs version detection
+
+
+
+#### Find all TCP ports on your target. Submit the total number of found TCP ports as the answer.
+
+<figure><img src="../../../../.gitbook/assets/image (69).png" alt=""><figcaption></figcaption></figure>
+
+#### Enumerate the hostname of your target and submit it as the answer. (case-sensitive)
+
+<figure><img src="../../../../.gitbook/assets/image (70).png" alt=""><figcaption></figcaption></figure>
+
+## Further reading
+
+See the official [Nmap port scanning guide](https://nmap.org/book/man-port-scanning-techniques.html).
