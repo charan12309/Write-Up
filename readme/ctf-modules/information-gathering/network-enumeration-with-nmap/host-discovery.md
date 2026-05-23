@@ -1,91 +1,14 @@
-# Network Enumeration with Nmap
+---
+description: Discover live hosts with Nmap before deeper enumeration.
+---
 
-Use this page to discover live hosts and understand how Nmap performs host discovery on internal networks.
-
-```
-┌────────────────────────┐
-│ THE PUBLIC INTERNET    │
-│ (External Pentest)     │
-└───────────┬────────────┘
-            │
-       [ Public IP ]
-            │
-┌───────────┴────────────┐
-│ Router and firewall    │
-│ NAT blocks inbound     │
-└───────────┬────────────┘
-            │
-      [ Private subnet ]
-            │
-┌──────────────────────────────────────────────────────────────┐
-│ Internal web host │ Domain controller │ Attacker via VPN    │
-│ 10.129.2.18       │ 10.129.2.10       │ 10.10.14.5          │
-└──────────────────────────────────────────────────────────────┘
-```
-
-<figure><img src="../../../.gitbook/assets/image (61).png" alt=""><figcaption></figcaption></figure>
-
-### Syntax
-
-Nmap uses this basic format:
-
-```bash
-nmap <scan types> <options> <target>
-```
-
-`-sS` is one of the most common scan types.
-
-It sends a SYN packet and stops before the full TCP handshake completes.
-
-That makes it fast and relatively quiet.
-
-```bash
-nmap --help
-
-<SNIP>
-SCAN TECHNIQUES:
-  -sS/sT/sA/sW/sM: TCP SYN/Connect()/ACK/Window/Maimon scans
-  -sU: UDP Scan
-  -sN/sF/sX: TCP Null, FIN, and Xmas scans
-  --scanflags <flags>: Customize TCP scan flags
-  -sI <zombie host[:probeport]>: Idle scan
-  -sY/sZ: SCTP INIT/COOKIE-ECHO scans
-  -sO: IP protocol scan
-  -b <FTP relay host>: FTP bounce scan
-<SNIP>
-```
-
-With a SYN scan:
-
-* `SYN-ACK` means the port is `open`.
-* `RST` means the port is `closed`.
-* No response often means the port is `filtered`.
-
-Example:
-
-```bash
-sudo nmap -sS localhost
-
-Starting Nmap 7.80 ( https://nmap.org ) at 2020-06-11 22:50 UTC
-Nmap scan report for localhost (127.0.0.1)
-Host is up (0.000010s latency).
-Not shown: 996 closed ports
-PORT     STATE SERVICE
-22/tcp   open  ssh
-80/tcp   open  http
-5432/tcp open  postgresql
-5901/tcp open  vnc-1
-
-Nmap done: 1 IP address (1 host up) scanned in 0.18 seconds
-```
-
-### Host discovery
+# Host Discovery
 
 Start by finding which hosts are online.
 
 On internal tests, this is usually the first step.
 
-#### Scan a network range
+### Scan a network range
 
 ```bash
 sudo nmap 10.129.2.0/24 -sn -oA tnet | grep for | cut -d" " -f5
@@ -99,7 +22,7 @@ sudo nmap 10.129.2.0/24 -sn -oA tnet | grep for | cut -d" " -f5
 10.129.2.28
 ```
 
-<figure><img src="../../../.gitbook/assets/image (55).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../../../../.gitbook/assets/image (55).png" alt=""><figcaption></figcaption></figure>
 
 What this does:
 
@@ -113,7 +36,7 @@ This works best when hosts reply to ICMP or other discovery probes.
 
 If standard discovery fails, try direct TCP probes against likely ports such as `80` or `445`.
 
-#### Scan an IP list
+### Scan an IP list
 
 Use a host list when the scope is predefined.
 
@@ -141,11 +64,11 @@ sudo nmap -sn -oA tnet -iL hosts.lst | grep for | cut -d" " -f5
 10.129.2.20
 ```
 
-<figure><img src="../../../.gitbook/assets/image (56).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../../../../.gitbook/assets/image (56).png" alt=""><figcaption></figcaption></figure>
 
 If some hosts do not appear, they may be blocking or ignoring the default discovery traffic.
 
-#### Scan multiple IPs directly
+### Scan multiple IPs directly
 
 Use this when you only need a few targets.
 
@@ -167,7 +90,7 @@ sudo nmap -sn -oA tnet 10.129.2.18-20 | grep for | cut -d" " -f5
 10.129.2.20
 ```
 
-#### Scan a single IP
+### Scan a single IP
 
 Before you enumerate services, confirm the host is alive.
 
@@ -201,9 +124,9 @@ MAC Address: DE:AD:00:00:BE:EF
 Nmap done: 1 IP address (1 host up) scanned in 0.05 seconds
 ```
 
-<figure><img src="../../../.gitbook/assets/image (59).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../../../../.gitbook/assets/image (59).png" alt=""><figcaption></figcaption></figure>
 
-#### Why this happens
+### Why this happens
 
 Hosts on the same local subnet must use ARP to resolve MAC addresses.
 
@@ -211,7 +134,7 @@ If the target answers ARP, Nmap already knows the host is alive.
 
 There is no need to send a separate ICMP probe.
 
-#### Why it matters
+### Why it matters
 
 For internal testing:
 
@@ -225,7 +148,7 @@ For remote networks:
 * Nmap must fall back to ICMP or TCP-based discovery.
 * Host discovery becomes easier to filter or hide.
 
-#### Flag breakdown
+### Flag breakdown
 
 * `--packet-trace` prints packets that Nmap sends and receives.
 * `-PE` tells Nmap to use ICMP echo requests for discovery.
@@ -234,7 +157,7 @@ For remote networks:
 On a local subnet, Nmap may still prefer ARP even when `-PE` is set.
 {% endhint %}
 
-<figure><img src="../../../.gitbook/assets/image (60).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../../../../.gitbook/assets/image (60).png" alt=""><figcaption></figcaption></figure>
 
 ### Use `--reason` to verify discovery
 
@@ -258,7 +181,7 @@ The key line is:
 
 That confirms Nmap treated the ARP reply as proof the host is alive.
 
-<figure><img src="../../../.gitbook/assets/image (62).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../../../../.gitbook/assets/image (62).png" alt=""><figcaption></figcaption></figure>
 
 ### Force ICMP instead of ARP
 
@@ -301,11 +224,26 @@ Common starting points include:
 Treat TTL as a hint, not proof. Routing hops and host configuration can change it.
 {% endhint %}
 
-<figure><img src="../../../.gitbook/assets/image (63).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../../../../.gitbook/assets/image (63).png" alt=""><figcaption></figcaption></figure>
+
+### 2. Evading Firewalls and IDS Systems
+
+As your module note mentions, standard host discovery fails if a firewall drops ICMP packets. If you only know one discovery strategy (ICMP Ping), you will report the host as dead and miss the target completely.
+
+Knowing "more strategies" means you can cycle through alternate host discovery techniques when the front door is locked:
+
+* TCP SYN Ping (`-PS`): Sends a silent connection initialization packet to a common port (like 80 or 443). Even if a firewall blocks ICMP, the target's operating system might automatically answer the TCP request, revealing that the host is alive.
+* TCP ACK Ping (`-PA`): Sends a fake acknowledgment packet. The target machine gets confused because it doesn't remember an open connection, so it fires back a `RST` (Reset) packet, completely bypassing basic firewall rules and proving it is powered on.
+* UDP Ping (`-PU`): Sends a UDP packet to a highly unlikely port. If the host is up, it returns an ICMP "Port Unreachable" error, exposing its active state.
+
+### 3. Optimizing Your Pentest Window (Speed)
+
+If you drop onto an enterprise network range containing 65,536 IP addresses (a `/16` subnet) and you try to run a full port scan on every single address blindly, your scan will take days, consume massive bandwidth, and alert every blue team alarm on the network.
+
+Mastering host discovery allows you to execute a highly optimized multi-strategy "sweep" first, whittling down those 65,000 possibilities into a clean text file of 20 verified live targets in minutes. You then feed that specific scope list into your deeper service scans, keeping your execution clean, fast, and professional.
+
+That is why the material stresses this phase: The more strategies you know, the less likely you are to be blinded by a simple firewall rule.
 
 ### Further reading
 
 See the official [Nmap host discovery guide](https://nmap.org/book/host-discovery-strategies.html).
-
-
-
