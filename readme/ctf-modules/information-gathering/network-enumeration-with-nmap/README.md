@@ -1,4 +1,8 @@
-# Network Enumeration with Nmap
+---
+description: This covers the module Network enumeration using Nmap.
+---
+
+# Asset Discovery
 
 Use this page to discover live hosts and understand how Nmap performs host discovery on internal networks.
 
