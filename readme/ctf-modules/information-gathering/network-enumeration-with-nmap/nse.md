@@ -235,4 +235,4 @@ Good starting points:
 ### Further reading
 
 * Official [NSE script reference](https://nmap.org/nsedoc/index.html)
-* [Service Enumeration](service-enumeration.md)
+* [Service Enumeration](service-enumeration-using-nmap.md)
