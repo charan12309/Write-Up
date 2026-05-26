@@ -116,9 +116,7 @@ If you find a readable share, inspect files for creds, configs, keys, and script
 
 If you find a writable share, test whether it can influence an app, login script, or web root.
 
-
-
-rpcclient:
+### `rpcclient` queries
 
 | **Query**                 | **Description**                                                    |
 | ------------------------- | ------------------------------------------------------------------ |
@@ -130,9 +128,9 @@ rpcclient:
 | `enumdomusers`            | Enumerates all domain users.                                       |
 | `queryuser <RID>`         | Provides information about a specific user.                        |
 
-example:
+### Example `rpcclient` session
 
-```
+```bash
 rpcclient $> srvinfo
 
         DEVSMB         Wk Sv PrQ Unx NT SNT DEVSM
@@ -208,8 +206,10 @@ DACL
                 SID: S-1-1-0
 ```
 
-{% code title="USER ENUMERATION" %}
-```
+### User enumeration
+
+{% code title="User enumeration" %}
+```bash
 rpcclient $> enumdomusers
 
 user:[mrb3n] rid:[0x3e8]
@@ -280,9 +280,9 @@ rpcclient $> queryuser 0x3e8
 
 We can then use the results to identify the group's RID, which we can then use to retrieve information from the entire group.
 
-**Rpcclient - Group Information**
+### Group information
 
-```
+```bash
   
 rpcclient $> querygroup 0x201
 
@@ -293,14 +293,12 @@ rpcclient $> querygroup 0x201
 
 ```
 
-\
-Bruteforcing user ids:
+### Bruteforcing user IDs
 
-{% code title="" %}
-```
+{% code title="Bruteforcing user IDs" %}
+```bash
 impale7@htb[/htb]$ for i in $(seq 500 1100);do rpcclient -N -U "" 10.129.14.128 -c "queryuser 0x$(printf '%x\n' $i)" | grep "User Name\|user_rid\|group_rid" && echo "";done
 ```
 {% endcode %}
 
 An alternative to this would be a Python script from [Impacket](https://github.com/SecureAuthCorp/impacket) called [samrdump.py](https://github.com/SecureAuthCorp/impacket/blob/master/examples/samrdump.py).
-
