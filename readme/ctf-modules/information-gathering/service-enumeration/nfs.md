@@ -1,5 +1,7 @@
 # NFS
 
+### Key notes
+
 * Ports — 111 and 2049
 * Commands — showmount, mount, ls -n, umount
 * Dangerous settings — no\_root\_squash, rw, insecure
