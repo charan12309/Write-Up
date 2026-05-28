@@ -1,4 +1,4 @@
-# Sub Domain Enumeration
+# Sub Domain/Vhost Enumeration
 
 Subdomains extend the main domain and often expose separate applications or services.
 
@@ -208,4 +208,269 @@ canberra-office.zonetransfer.me. 7200 IN A  202.14.81.230
 ;; XFR size: 50 records (messages 1, bytes 2085)
 ```
 
-<br>
+\
+Virtual Hosts
+
+***
+
+Once DNS sends traffic to the right IP, the web server decides what content to serve.
+
+That decision often depends on `virtual hosts`, or `VHosts`.
+
+### Why virtual hosts matter
+
+One server can host many sites or apps.
+
+The server uses the request details to decide which one to return.
+
+This matters during recon because a target may expose:
+
+* hidden apps
+* admin panels
+* staging sites
+* internal-only names
+
+### VHosts vs subdomains
+
+These terms overlap, but they are not the same.
+
+* `Subdomain` — a DNS name under a parent domain, such as `blog.example.com`
+* `VHost` — a web server config that maps a hostname to content
+
+Key point:
+
+* a subdomain usually has a DNS record
+* a VHost may exist even without public DNS
+
+If a VHost has no DNS record, you can still test it by sending the right `Host` header or by adding it to your local `hosts` file.
+
+{% hint style="info" %}
+No DNS record does not mean no website.
+{% endhint %}
+
+### How virtual host routing works
+
+At the core of virtual hosting is the `Host` header.
+
+The browser sends it with every HTTP request. The web server reads it and picks the matching site config.
+
+Typical flow:
+
+1. You request `http://target`.
+2. The request includes a `Host` header, such as `admin.example.com`.
+3. The server checks its virtual host configuration.
+4. If a match exists, it serves that site's document root.
+5. If no match exists, it serves the default site or returns an error.
+
+![Sequence diagram showing interactions between Browser, WebServer, VirtualHostConfig, and DocumentRoot. Includes HTTP request, server response, and file access steps.](https://cdn.services-k8s.prod.aws.htb.systems/content/modules/144/ig_virtualhosts_1.png)
+
+### Example virtual host config
+
+Different hostnames can point to different content on the same server.
+
+```apache
+# Example of name-based virtual host configuration in Apache
+<VirtualHost *:80>
+    ServerName www.example1.com
+    DocumentRoot /var/www/example1
+</VirtualHost>
+
+<VirtualHost *:80>
+    ServerName www.example2.org
+    DocumentRoot /var/www/example2
+</VirtualHost>
+
+<VirtualHost *:80>
+    ServerName www.another-example.net
+    DocumentRoot /var/www/another-example
+</VirtualHost>
+```
+
+The server uses the `Host` header to decide which block applies.
+
+### Types of virtual hosting
+
+#### Name-based hosting
+
+This is the most common model.
+
+The server uses the `Host` header to distinguish sites on the same IP.
+
+Why it matters:
+
+* easy to deploy
+* cost-effective
+* common in real targets
+
+#### IP-based hosting
+
+Each site gets its own IP address.
+
+The server chooses content based on the destination IP instead of the hostname.
+
+Why it matters:
+
+* stronger separation
+* works without hostname matching
+* less common due to IP usage
+
+#### Port-based hosting
+
+Each site listens on a different port.
+
+Examples include `:80`, `:8080`, or `:8443`.
+
+Why it matters:
+
+* useful when hostnames are not enough
+* less user-friendly
+* easy to miss if you only check standard ports
+
+### Why VHost fuzzing works
+
+A target may host sites that:
+
+* are not linked anywhere
+* do not appear in public DNS
+* resolve only inside the target network
+
+You can still discover them by sending different `Host` headers to a known IP.
+
+This is usually called `VHost fuzzing`.
+
+### Common tools
+
+| Tool                                                 | Best use                                                 |
+| ---------------------------------------------------- | -------------------------------------------------------- |
+| [gobuster](https://github.com/OJ/gobuster)           | Fast VHost brute force with simple flags                 |
+| [ffuf](https://github.com/ffuf/ffuf)                 | Flexible header fuzzing and response filtering           |
+| [Feroxbuster](https://github.com/epi052/feroxbuster) | Fast discovery with strong filtering and wildcard checks |
+
+### Fast VHost workflow
+
+{% stepper %}
+{% step %}
+### Identify the target
+
+Start with a live web server IP or a base domain that resolves.
+
+You need a reachable target first.
+{% endstep %}
+
+{% step %}
+### Prepare candidate names
+
+Use a wordlist with names such as:
+
+* `dev`
+* `admin`
+* `staging`
+* `test`
+* `api`
+
+Add custom names from recon when possible.
+{% endstep %}
+
+{% step %}
+### Fuzz the `Host` header
+
+Send requests to the target IP with different hostnames.
+
+Look for unique responses by:
+
+* status code
+* body length
+* title
+* redirect target
+{% endstep %}
+
+{% step %}
+### Validate findings
+
+Retest interesting hits manually.
+
+Add them to your `hosts` file if you want to browse them directly.
+{% endstep %}
+{% endstepper %}
+
+### `gobuster` for VHosts
+
+`gobuster` is one of the fastest ways to brute force virtual hosts.
+
+Basic syntax:
+
+```bash
+gobuster vhost -u http://<target_IP_address> -w <wordlist_file> --append-domain
+```
+
+Important flags:
+
+* `-u` — target URL or IP
+* `-w` — wordlist path
+* `--append-domain` — appends the base domain to each candidate
+* `-t` — thread count
+* `-k` — ignore TLS certificate errors
+* `-o` — save output to a file
+
+In newer `gobuster` versions, `--append-domain` is required for this workflow.
+
+Example:
+
+```bash
+gobuster vhost -u http://inlanefreight.htb:81 -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-110000.txt --append-domain
+```
+
+Example output:
+
+```shell
+impale7@htb[/htb]$ gobuster vhost -u http://inlanefreight.htb:81 -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-110000.txt --append-domain
+===============================================================
+Gobuster v3.6
+by OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)
+===============================================================
+[+] Url:             http://inlanefreight.htb:81
+[+] Method:          GET
+[+] Threads:         10
+[+] Wordlist:        /usr/share/seclists/Discovery/DNS/subdomains-top1million-110000.txt
+[+] User Agent:      gobuster/3.6
+[+] Timeout:         10s
+[+] Append Domain:   true
+===============================================================
+Starting gobuster in VHOST enumeration mode
+===============================================================
+Found: forum.inlanefreight.htb:81 Status: 200 [Size: 100]
+[...]
+Progress: 114441 / 114442 (100.00%)
+===============================================================
+Finished
+===============================================================
+```
+
+### How to read the results
+
+A hit is not always useful.
+
+Focus on results that differ from the default response.
+
+Good indicators:
+
+* a different status code
+* a different response size
+* a unique page title
+* a redirect to a named host
+
+Retest promising results with:
+
+```bash
+curl -H "Host: forum.inlanefreight.htb" http://inlanefreight.htb:81
+```
+
+### Practical notes
+
+`VHost` discovery can create a lot of traffic.
+
+It may trigger `IDS`, `WAF`, or rate limits.
+
+{% hint style="warning" %}
+Only brute force VHosts when you have authorization.
+{% endhint %}
