@@ -474,3 +474,15 @@ It may trigger `IDS`, `WAF`, or rate limits.
 {% hint style="warning" %}
 Only brute force VHosts when you have authorization.
 {% endhint %}
+
+if u wanna make a list specifiacally for subdomains/vhosts starting with web\* then you can create a list using this command and use it
+
+{% code title="" %}
+```
+grep -h ^su /usr/share/wordlists/seclists/Discovery/DNS/* > custom_su_subs.txt
+
+
+gobuster vhost -u http://inlanefreight.htb:32457 -w custom_su_subs.txt --append-domain -t 500
+```
+{% endcode %}
+

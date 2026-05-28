@@ -55,6 +55,7 @@
         * [Passive Web Enumeration](readme/ctf-modules/information-gathering/web-enumeration/passive-web-enumeration.md)
         * [Domain Enumeration](readme/ctf-modules/information-gathering/web-enumeration/domain-enumeration.md)
         * [Sub Domain/Vhost Enumeration](readme/ctf-modules/information-gathering/web-enumeration/sub-domain-vhost-enumeration.md)
+        * [Web Fingerprinting](readme/ctf-modules/information-gathering/web-enumeration/web-fingerprinting.md)
       * [Application Enumeration](readme/ctf-modules/information-gathering/application-enumeration.md)
       * [Active Directory Enumeration](readme/ctf-modules/information-gathering/active-directory-enumeration.md)
     * [Pre-Exploitation](readme/ctf-modules/pre-exploitation/README.md)
