@@ -486,3 +486,10 @@ gobuster vhost -u http://inlanefreight.htb:32457 -w custom_su_subs.txt --append-
 ```
 {% endcode %}
 
+for mapping:
+
+{% code title="" %}
+```
+echo "154.57.164.81 inlanefreight.htb" | sudo tee -a /etc/hosts
+```
+{% endcode %}
