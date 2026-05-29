@@ -493,3 +493,10 @@ for mapping:
 echo "154.57.164.81 inlanefreight.htb" | sudo tee -a /etc/hosts
 ```
 {% endcode %}
+
+{% code title="" %}
+```
+sudo sh -c "echo '94.237.61.84 inlanefreight.htb' >> /etc/hosts"
+```
+{% endcode %}
+
